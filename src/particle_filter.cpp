@@ -21,6 +21,8 @@
 
 using namespace std;
 
+const float VSV = 0.001;
+
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1.
@@ -43,7 +45,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 			// TODO: Sample  and from these normal distrubtions like this:
 			// sample_x = dist_x(gen);
 			// where "gen" is the random engine initialized earlier.
-	    sample_x = dist_x(gen);
+	    	sample_x = dist_x(gen);
 			sample_y = dist_y(gen);
 			sample_theta = dist_theta(gen);
 
@@ -52,13 +54,15 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 			p.x = sample_x;
 			p.y = sample_y;
 			p.theta = sample_theta;
-
+			// set the weight to 1 as suggested in TODO
+			p.weight = 1;
+			//store the particle info in particles vector
 			particles.push_back(p);
 
 			// Print your samples to the terminal.
 			cout << "Sample " << i + 1 << " " << sample_x << " " << sample_y << " " << sample_theta << endl;
-	}
-
+		}
+		is_initialized = true;
 	}
 
 }
@@ -68,6 +72,44 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
+	//Random generator
+	default_random_engine gen;
+
+
+
+	for (int i = 0; i < num_particles; ++i) {
+		double sample_x, sample_y, sample_theta;
+
+		//if Xsig_aug[4] != 0  (i.e yawdot)
+	      if (yaw_rate > VSV){
+	         particles[i].x += (velocity/yaw_rate)*((sin(sample_theta+yaw_rate*delta_t))-sin(sample_theta)) ;
+	         particles[i].y += (velocity/yaw_rate)*((-cos(sample_theta+yaw_rate*delta_t))+cos(sample_theta)) ;
+			 particles[i].theta += yaw_rate*delta_t;
+
+	      }else{
+	         particles[i].x += velocity*cos(sample_theta)*delta_t;
+	         particles[i].y += velocity*sin(sample_theta)*delta_t;
+	      }
+
+
+		  // normal (Gaussian) distribution for x, y, theta
+		  // std for x, y, and theta are available in std_pos[0], std_pos[1] and std_pos[2] respectively
+		  // TODO: Sample  and from these normal distrubtions like this:
+		  // sample_x = dist_x(gen);
+		  // where "gen" is the random engine initialized earlier.
+		  normal_distribution<double> dist_x(particles[i].x, std_pos[0]);
+		  normal_distribution<double> dist_y(particles[i].y, std_pos[1]);
+		  normal_distribution<double> dist_theta(particles[i].theta, std_pos[2]);
+
+		  //Find only the noise for the msmts
+		  sample_x = dist_x(gen) - particles[i].x;
+		  sample_y = dist_y(gen) - particles[i].y;
+		  sample_theta = dist_theta(gen) - particles[i].theta;
+		  //Add random noise to the particle measurements
+		  particles[i].x += sample_x;
+		  particles[i].y += sample_y;
+		  particles[i].theta += sample_theta;
+	}
 
 }
 
