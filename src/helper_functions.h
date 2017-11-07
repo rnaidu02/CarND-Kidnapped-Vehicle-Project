@@ -242,17 +242,25 @@ inline bool read_landmark_data(std::string filename, std::vector<LandmarkObs>& o
 }
 
 inline double return_multivariate_gaussian(double x_map, double y_map, double std_x, double std_y, double mu_x, double mu_y) {
-	double exp_x  = (x_map - mu_x) *(x_map - mu_x)/(2*std_x*std_x);
-	double exp_y  = (y_map - mu_y) *(y_map - mu_y)/(2*std_y*std_y);
+	double exp_x  = ((x_map - mu_x) *(x_map - mu_x))/(2*std_x*std_x);
+	double exp_y  = ((y_map - mu_y) *(y_map - mu_y))/(2*std_y*std_y);
 
+/*
+	std::cout << "LOG: helper_function: x_map, mu_x:" << x_map << " " << mu_x  << std::endl;
+	std::cout << "LOG: helper_function: exp_x:" << exp_x << std::endl;
+	std::cout << "LOG: helper_function: exp_y:" << exp_y << std::endl;
+	std::cout << "LOG: helper_function: val:" << (-1*(exp_x+exp_y))/(2*M_PI*std_x*std_y) << std::endl;
+*/
 	return exp(-1*(exp_x+exp_y))/(2*M_PI*std_x*std_y);
 }
 
 inline LandmarkObs return_matched_obs_for_id(int id, std::vector<LandmarkObs> predictions){
 	LandmarkObs obs;
 	for (int i = 0; i < predictions.size(); ++i){
+		std::cout << "LOG: helper_function: obs:"  << id << " " << predictions[i].id << " " << predictions[i].x << " " << predictions[i].y << std::endl;
 		if (id == predictions[i].id){
 			obs = predictions[i];
+			std::cout << "LOG: helper_function: obs:" << obs.x << " " << obs.y << std::endl;
 			break;
 		}
 	}

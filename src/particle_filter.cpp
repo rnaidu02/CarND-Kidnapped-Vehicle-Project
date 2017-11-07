@@ -146,7 +146,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 			}
 		}
 		//Now set the closest predicted landmark to the obs
-		obs.id = min_pid;
+		observations[nObs].id = min_pid;
 
 	}
 
@@ -208,10 +208,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double map_x = obs_in_map_space[l].x;
 			double map_y = obs_in_map_space[l].y;
 
+			std::cout << "LOG: obs_in_map_space: obs:"  << " " << obs_in_map_space[l].id << " " << obs_in_map_space[l].x << " " << obs_in_map_space[l].y << std::endl;
+
 			LandmarkObs lm = return_matched_obs_for_id(obs_in_map_space[l].id, withinRange_predictions);
+
+			std::cout << "LOG: after return_matched_obs_for_id:"  << " " << lm.id << " " << lm.x << " " << lm.y << std::endl;
 
 			double mv_g_prob = return_multivariate_gaussian(map_x, map_y, std_landmark[0], std_landmark[1], lm.x, lm.y);
 
+			cout << "LOG: multi variate prob: " << mv_g_prob << endl;
 			//Particle's final weight is the multiplication of all mv prob of all observations.
 			particles[i].weight *= mv_g_prob;
 
@@ -220,8 +225,6 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		// Add weights to weight vector
 		weights.push_back(particles[i].weight);
 	}
-
-
 
 }
 
@@ -236,15 +239,39 @@ void ParticleFilter::resample() {
 		max_w = max(w)
 		w_index = randint(0, N)
 		for i in range(N):
-		beta = uniform(0, 2*max_w)
-		while(w[w_index] < beta):
-			beta = beta - w[w_index]
-			w_index += 1
-			w_index = w_index % N
-		p3.append(p[w_index])
+			beta = uniform(0, 2*max_w)
+			while(w[w_index] < beta):
+				beta = beta - w[w_index]
+				w_index += 1
+				w_index = w_index % N
+			p3.append(p[w_index])
 		p = p3
 	* ************************************************************************** */
+	// Set of new particles that came out of selection with replacement
+	std::vector<Particle> newParticles;
 
+	double beta = 0.0;
+
+	double max_w = *std::max_element(weights.begin(), weights.end());
+	//Random generator
+	default_random_engine gen;
+	//uniform int distribution http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
+	std::uniform_int_distribution<> dis(0, num_particles-1);
+	int w_index = dis(gen);
+
+	//Uniform real distribution http://www.cplusplus.com/reference/random/uniform_real_distribution/
+	std::uniform_real_distribution<double> real_dis(0.0, 2*max_w);
+
+	for (int i; i < num_particles; ++i){
+		beta = real_dis(gen);
+
+		while(weights[w_index] < beta){
+			beta = beta - weights[w_index];
+			w_index = (w_index+1)%num_particles;
+		}
+		newParticles.push_back(particles[w_index]);
+	}
+	particles = newParticles;
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)
