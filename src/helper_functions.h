@@ -241,9 +241,13 @@ inline bool read_landmark_data(std::string filename, std::vector<LandmarkObs>& o
 	return true;
 }
 
+/* return_multivariate_gaussian() takes inputs x_map and y_map (map coordinates of the lanmark) and mu_x and mu_y (nearest landmark pos)
+   along with std for x and y. This returns the Multivariate gaussian
+*/
 inline double return_multivariate_gaussian(double x_map, double y_map, double std_x, double std_y, double mu_x, double mu_y) {
 	double exp_x  = ((x_map - mu_x) *(x_map - mu_x))/(2*std_x*std_x);
 	double exp_y  = ((y_map - mu_y) *(y_map - mu_y))/(2*std_y*std_y);
+	double gaussian_norm = (1/(2*M_PI*std_x*std_y));
 
 /*
 	std::cout << "LOG: helper_function: x_map, mu_x:" << x_map << " " << mu_x  << std::endl;
@@ -251,9 +255,14 @@ inline double return_multivariate_gaussian(double x_map, double y_map, double st
 	std::cout << "LOG: helper_function: exp_y:" << exp_y << std::endl;
 	std::cout << "LOG: helper_function: val:" << (-1*(exp_x+exp_y))/(2*M_PI*std_x*std_y) << std::endl;
 */
-	return exp(-1*(exp_x+exp_y))/(2*M_PI*std_x*std_y);
+	return gaussian_norm*exp(-1*(exp_x+exp_y));
+
 }
 
+/*
+*	For the given Id, findout the corresponding landmark form the list
+*	@ Returns the LandMarkObs object for the given Id
+*/
 inline LandmarkObs return_matched_obs_for_id(int id, std::vector<LandmarkObs> predictions){
 	LandmarkObs obs;
 	for (int i = 0; i < predictions.size(); ++i){

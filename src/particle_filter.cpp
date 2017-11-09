@@ -21,7 +21,10 @@
 
 using namespace std;
 
-const float VSV = 0.01;
+const float VSV = 0.001;
+
+//Random generator (global as this is shred in many functions)
+default_random_engine gen;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of
@@ -29,10 +32,11 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 	if (!is_initialized){
-		num_particles = 100; //as tried in particle filter lessons
-
-		//Random generator
+		//Random generator (global as this is shred in many functions)
 		default_random_engine gen;
+
+		num_particles = 100; //as tried in particle filter lessons (100 Error x: 0.111, y : 0.109, yaw: 0.004)
+
 		// normal (Gaussian) distribution for x, y, and theta
 		// std for x, y, and theta are available in std[0], std[1] and std[2] respectively
 		normal_distribution<double> dist_x(x, std[0]);
@@ -55,7 +59,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 			p.y = sample_y;
 			p.theta = sample_theta;
 			// set the weight to 1 as suggested in TODO
-			p.weight = 1;
+			p.weight = 1.0f;
 			//store the particle info in particles vector
 			particles.push_back(p);
 			weights.push_back(1.0f);
@@ -73,13 +77,14 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
-	//Random generator
-	default_random_engine gen;
 
 	// normal (Gaussian) distribution for x, y, theta with mean as 0
 	// std for x, y, and theta are available in std_pos[0], std_pos[1] and std_pos[2] respectively
 	// TODO: Sample  and from these normal distrubtions like this:
 	// sample_x = dist_x(gen);
+	//Random generator (global as this is shred in many functions)
+	default_random_engine gen;
+
 	// where "gen" is the random engine initialized earlier.
 	normal_distribution<double> dist_x(0, std_pos[0]);
 	normal_distribution<double> dist_y(0, std_pos[1]);
@@ -130,14 +135,11 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 		for (int nPred = 0; nPred < predicted.size(); ++nPred){
 			//Get the nObs th observations
 			LandmarkObs pred = predicted[nPred];
-
-			/*if ((pred != nullptr) || (obs != nullptr))*/{
-				//Find the distance between obs and pred
-				double dist1 = dist(obs.x, obs.y, pred.x, pred.y);
-				if (dist1 < nMinValue){
-					nMinValue = dist1;
-					min_pid = pred.id;
-				}
+			//Find the distance between obs and pred
+			double dist1 = dist(obs.x, obs.y, pred.x, pred.y);
+			if (dist1 < nMinValue){
+				nMinValue = dist1;
+				min_pid = pred.id;
 			}
 		}
 		//Now set the closest predicted landmark to the obs
@@ -252,8 +254,10 @@ void ParticleFilter::resample() {
 	double beta = 0.0;
 
 	double max_w = *std::max_element(weights.begin(), weights.end());
-	//Random generator
+	//Random generator (global as this is shred in many functions)
 	default_random_engine gen;
+
+
 	//uniform int distribution http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
 	std::uniform_int_distribution<> dis(0, num_particles-1);
 	int w_index = dis(gen);
